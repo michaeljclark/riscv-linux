@@ -204,7 +204,7 @@ static int __init riscv_intc_init(struct device_node *node, struct device_node *
 	if (set_handle_irq(&riscv_intc_irq))
 		goto error_set_handle_irq;
 
-	pr_info("%s: %ul local interrupts mapped\n", data->name, PTR_BITS);
+	pr_info("%s: %lu local interrupts mapped\n", data->name, PTR_BITS);
 	return 0;
 
 error_set_handle_irq:
