@@ -20,6 +20,8 @@
 
 #include "internals.h"
 
+void (*handle_arch_irq)(struct pt_regs *) __ro_after_init;
+
 /**
  * handle_bad_irq - handle spurious and unhandled irqs
  * @desc:      description of the interrupt
@@ -206,4 +208,12 @@ irqreturn_t handle_irq_event(struct irq_desc *desc)
 	raw_spin_lock(&desc->lock);
 	irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
 	return ret;
+}
+
+void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
+{
+	if (handle_arch_irq)
+		return;
+
+	handle_arch_irq = handle_irq;
 }
