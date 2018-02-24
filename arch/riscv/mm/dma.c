@@ -21,6 +21,7 @@
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
 #include <linux/scatterlist.h>
+#include <linux/swiotlb.h>
 
 static void *dma_riscv_alloc(struct device *dev, size_t size,
                             dma_addr_t *dma_handle, gfp_t gfp,
@@ -34,17 +35,17 @@ static void *dma_riscv_alloc(struct device *dev, size_t size,
 	    end_of_normal > dev->coherent_dma_mask ||
 	    end_of_normal > *dev->dma_mask)
 	{
-		gfp |= GFP_DMA;
+		gfp |= GFP_DMA32;
 	}
 
-	return dma_noop_ops.alloc(dev, size, dma_handle, gfp, attrs);
+	return swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
 }
 
 static void dma_riscv_free(struct device *dev, size_t size,
                           void *cpu_addr, dma_addr_t dma_addr,
                           unsigned long attrs)
 {
-	return dma_noop_ops.free(dev, size, cpu_addr, dma_addr, attrs);
+	return swiotlb_free_coherent(dev, size, cpu_addr, dma_addr);
 }
 
 static dma_addr_t dma_riscv_map_page(struct device *dev, struct page *page,
@@ -52,21 +53,21 @@ static dma_addr_t dma_riscv_map_page(struct device *dev, struct page *page,
                                       enum dma_data_direction dir,
                                       unsigned long attrs)
 {
-	return dma_noop_ops.map_page(dev, page, offset, size, dir, attrs);
+	return swiotlb_map_page(dev, page, offset, size, dir, attrs);
 }
 
 static int dma_riscv_map_sg(struct device *dev, struct scatterlist *sgl, int nents,
                              enum dma_data_direction dir,
                              unsigned long attrs)
 {
-	return dma_noop_ops.map_sg(dev, sgl, nents, dir, attrs);
+	return swiotlb_map_sg_attrs(dev, sgl, nents, dir, attrs);
 }
 
 static int dma_riscv_supported(struct device *dev, u64 mask)
 {
-	// Our smallest allocation pool (ZONE_DMA) uses 32 physical address bits
-	// (it is common on RISC-V for physical memory to start at the 2GiB mark)
-	return mask >= DMA_BIT_MASK(32);
+	if (mask > DMA_BIT_MASK(32))
+		return 0;
+	return swiotlb_dma_supported(dev, mask);
 }
 
 const struct dma_map_ops dma_riscv_ops = {
@@ -75,6 +76,11 @@ const struct dma_map_ops dma_riscv_ops = {
 	.map_page		= dma_riscv_map_page,
 	.map_sg			= dma_riscv_map_sg,
 	.dma_supported		= dma_riscv_supported,
+	.unmap_page		= swiotlb_unmap_page,
+	.unmap_sg		= swiotlb_unmap_sg_attrs,
+	.sync_single_for_cpu	= swiotlb_sync_single_for_cpu,
+	.sync_sg_for_cpu	= swiotlb_sync_sg_for_cpu,
+	.mapping_error		= swiotlb_dma_mapping_error,
 };
 
 EXPORT_SYMBOL(dma_riscv_ops);
