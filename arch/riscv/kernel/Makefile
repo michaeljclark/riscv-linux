@@ -27,6 +27,7 @@ obj-y	+= riscv_ksyms.o
 obj-y	+= stacktrace.o
 obj-y	+= vdso.o
 obj-y	+= cacheinfo.o
+obj-y	+= cmpxchg.o
 obj-y	+= vdso/
 
 CFLAGS_setup.o := -mcmodel=medany

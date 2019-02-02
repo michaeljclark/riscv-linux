@@ -19,12 +19,34 @@
 #include <asm/barrier.h>
 #include <asm/fence.h>
 
+extern unsigned long __xchg_relaxed_small(volatile void *ptr, unsigned long new,
+					  unsigned int size);
+extern unsigned long __xchg_acquire_small(volatile void *ptr, unsigned long new,
+					  unsigned int size);
+extern unsigned long __xchg_release_small(volatile void *ptr, unsigned long new,
+					  unsigned int size);
+extern unsigned long __xchg_small(volatile void *ptr, unsigned long new,
+				  unsigned int size);
+
+extern unsigned long __cmpxchg_relaxed_small(volatile void *ptr, unsigned long old,
+					     unsigned long new, unsigned int size);
+extern unsigned long __cmpxchg_acquire_small(volatile void *ptr, unsigned long old,
+					     unsigned long new, unsigned int size);
+extern unsigned long __cmpxchg_release_small(volatile void *ptr, unsigned long old,
+					     unsigned long new, unsigned int size);
+extern unsigned long __cmpxchg_small(volatile void *ptr, unsigned long old,
+				     unsigned long new, unsigned int size);
+
 #define __xchg_relaxed(ptr, new, size)					\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
 	__typeof__(new) __new = (new);					\
 	__typeof__(*(ptr)) __ret;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__xchg_relaxed_small(	\
+			(void*)ptr, (unsigned long)__new, size);	\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"	amoswap.w %0, %2, %1\n"			\
@@ -58,6 +80,10 @@
 	__typeof__(new) __new = (new);					\
 	__typeof__(*(ptr)) __ret;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__xchg_acquire_small(	\
+			(void*)ptr, (unsigned long)__new, size);	\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"	amoswap.w %0, %2, %1\n"			\
@@ -93,6 +119,10 @@
 	__typeof__(new) __new = (new);					\
 	__typeof__(*(ptr)) __ret;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__xchg_release_small(	\
+			(void*)ptr, (unsigned long)__new, size);	\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			RISCV_RELEASE_BARRIER				\
@@ -128,6 +158,10 @@
 	__typeof__(new) __new = (new);					\
 	__typeof__(*(ptr)) __ret;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__xchg_small(		\
+			(void*)ptr, (unsigned long)__new, size);	\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"	amoswap.w.aqrl %0, %2, %1\n"		\
@@ -179,6 +213,11 @@
 	__typeof__(*(ptr)) __ret;					\
 	register unsigned int __rc;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__cmpxchg_relaxed_small(	\
+			(void*)__ptr, (unsigned long)__old, 		\
+			(unsigned long)__new, size);			\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"0:	lr.w %0, %2\n"				\
@@ -223,6 +262,11 @@
 	__typeof__(*(ptr)) __ret;					\
 	register unsigned int __rc;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__cmpxchg_acquire_small(	\
+			(void*)__ptr, (unsigned long)__old, 		\
+			(unsigned long)__new, size);			\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"0:	lr.w %0, %2\n"				\
@@ -269,6 +313,11 @@
 	__typeof__(*(ptr)) __ret;					\
 	register unsigned int __rc;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__cmpxchg_release_small(	\
+			(void*)__ptr, (unsigned long)__old, 		\
+			(unsigned long)__new, size);			\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			RISCV_RELEASE_BARRIER				\
@@ -315,6 +364,11 @@
 	__typeof__(*(ptr)) __ret;					\
 	register unsigned int __rc;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__ret = (__typeof__(*(ptr)))__cmpxchg_small(		\
+			(void*)__ptr, (unsigned long)__old, 		\
+			(unsigned long)__new, size);			\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"0:	lr.w %0, %2\n"				\
