@@ -57,7 +57,7 @@ unsigned long __cmpxchg_small(volatile void *ptr, unsigned long old,
 	u32 mask, old32, new32, load32;
 	volatile u32 *ptr32;
 	unsigned int shift;
-	u8 load;
+	u32 load;
 
 	/* Check that ptr is naturally aligned */
 	WARN_ON((unsigned long)ptr & (size - 1));
